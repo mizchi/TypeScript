@@ -325,6 +325,8 @@ export interface WatchCompilerHostOfConfigFile<T extends BuilderProgram> extends
 export interface Watch<T> {
     /** Synchronize with host and get updated program */
     getProgram(): T;
+    /** Manual invalidation for custom sys */
+    invalidate(path: string, kind: FileWatcherEventKind): void;
     /**
      * Gets the existing program without synchronizing with changes on host
      *
@@ -542,9 +544,13 @@ export function createWatchProgram<T extends BuilderProgram>(host: WatchCompiler
     // Update extended config file watch
     if (configFileName) updateExtendedConfigFilesWatches(toPath(configFileName), compilerOptions, watchOptions, WatchType.ExtendedConfigFile);
 
+    const invalidate = (fileName: string, kind: FileWatcherEventKind) => {
+        onSourceFileChange(toPath(fileName), kind, toPath(fileName));
+    }
+
     return configFileName ?
-        { getCurrentProgram: getCurrentBuilderProgram, getProgram: updateProgram, close } :
-        { getCurrentProgram: getCurrentBuilderProgram, getProgram: updateProgram, updateRootFileNames, close };
+        { getCurrentProgram: getCurrentBuilderProgram, getProgram: updateProgram, close, invalidate } :
+        { getCurrentProgram: getCurrentBuilderProgram, getProgram: updateProgram, updateRootFileNames, close, invalidate };
 
     function close() {
         clearInvalidateResolutionsOfFailedLookupLocations();
